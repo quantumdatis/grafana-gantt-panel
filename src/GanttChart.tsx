@@ -169,7 +169,7 @@ export const GanttChart = ({
 
   const chartWidth = width - padding.left - padding.right;
   const fixedBarHeight = 30; //QUANTUMDATIS CUSTOM: fixed height for bars
-  const chartHeight = taskLabels.length * fixedBarHeight + padding.top + padding.bottom;
+  const chartHeight = (taskLabels.length + 1) * fixedBarHeight + padding.top + padding.bottom;
 
   // Find the time range based on the earliest start time and the latest end time.
   const timeExtents: [dayjs.Dayjs, dayjs.Dayjs] = [
