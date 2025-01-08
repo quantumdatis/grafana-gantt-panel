@@ -168,7 +168,8 @@ export const GanttChart = ({
   };
 
   const chartWidth = width - padding.left - padding.right;
-  const chartHeight = height - padding.top - padding.bottom;
+  const fixedBarHeight = 30; //QUANTUMDATIS CUSTOM: fixed height for bars
+  const chartHeight = taskLabels.length * fixedBarHeight + padding.top + padding.bottom;
 
   // Find the time range based on the earliest start time and the latest end time.
   const timeExtents: [dayjs.Dayjs, dayjs.Dayjs] = [
@@ -207,10 +208,16 @@ export const GanttChart = ({
   const invertedScaleX = d3.scaleLinear().domain([0, chartWidth]).range([from.valueOf(), to.valueOf()]);
 
   // Limit bar height to 25% of chartHeight.
-  const barHeightLimit = 0.25;
-  const scalePadding = Math.max((1 - barHeightLimit * taskLabels.length) / (1 + barHeightLimit), 0);
+  //const barHeightLimit = 0.25;
+  //const scalePadding = Math.max((1 - barHeightLimit * taskLabels.length) / (1 + barHeightLimit), 0);
 
-  const scaleY = d3.scaleBand().domain(taskLabels).range([0, chartHeight]).padding(scalePadding);
+
+  const scaleY = d3
+    .scaleBand()
+    .domain(taskLabels)
+    .range([0, taskLabels.length * fixedBarHeight]) 
+    .padding(0.1);
+
   const axisX = d3.axisBottom(scaleX).tickFormat((d) => {
     if (experiments && experiments.enabled && experiments.relativeXAxis) {
       const duration = (d as number) - timeExtents[0].valueOf();
@@ -234,9 +241,10 @@ export const GanttChart = ({
     height: height - padding.bottom,
   };
 
-  const barPadding = 2;
-  const taskBarHeight = scaleY.bandwidth() - barPadding;
+  //const barPadding = 2;
+  const taskBarHeight = 25;
 
+  /*
   if (taskBarHeight < 5) {
     return (
       <div className="panel-empty">
@@ -247,6 +255,7 @@ export const GanttChart = ({
       </div>
     );
   }
+  */
 
   return (
     <div>
@@ -254,7 +263,7 @@ export const GanttChart = ({
         ref={svgRef}
         className={styles.svg}
         width={width}
-        height={height - (selectableGroups.length > 0 ? 40 : 0)}
+        height={chartHeight}
         xmlns="http://www.w3.org/2000/svg"
         xmlnsXlink="http://www.w3.org/1999/xlink"
         onMouseDown={(e) => {
@@ -312,8 +321,8 @@ export const GanttChart = ({
 
             const taskBarPos = {
               x: pixelStartX + padding.left,
-              y: scaleY(label) ?? 0,
-            };
+              y: (scaleY(label) ?? 0) + (scaleY.bandwidth() - taskBarHeight) / 2, 
+            };                     
 
             const tooltipContent = (
               <div>

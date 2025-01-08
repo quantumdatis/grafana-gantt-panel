@@ -1,18 +1,9 @@
 import { FieldType, PanelProps } from '@grafana/data';
 import { useTheme2 } from '@grafana/ui';
 import { GanttChart } from 'GanttChart';
-import { PanelWizard, toTimeField } from 'grafana-plugin-support';
+import { toTimeField } from 'grafana-plugin-support';
 import React from 'react';
 import { GanttOptions } from './types';
-
-const usage = {
-  schema: [
-    { type: FieldType.string, description: 'Task name' },
-    { type: FieldType.time, description: 'Task start time' },
-    { type: FieldType.time, description: 'Task end time' },
-  ],
-  url: 'https://github.com/marcusolsson/grafana-gantt-panel',
-};
 
 interface Props extends PanelProps<GanttOptions> {}
 
@@ -32,11 +23,18 @@ export const GanttPanel: React.FC<Props> = ({
   // TODO: Support multiple data frames.
   const frame = data.series[0];
 
-  // Display help text if no data was found.
+  //QUANTUMDATIS CUSTOM: disabled help popup
   if (!frame) {
     return (
-      <div style={{ width, height }}>
-        <PanelWizard {...usage} />
+      <div style={{
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100%', 
+        fontSize: '20px', 
+        color: 'gray', 
+      }}>
+        No Data
       </div>
     );
   }
@@ -67,19 +65,15 @@ export const GanttPanel: React.FC<Props> = ({
   // Make sure that all fields have been configured before we continue.
   if (!textField || !startField || !endField) {
     return (
-      <div style={{ width, height }}>
-        <PanelWizard
-          {...usage}
-          fields={frame.fields.map((field) => {
-            if (startField && startField.name === field.name) {
-              return startField;
-            }
-            if (endField && endField.name === field.name) {
-              return endField;
-            }
-            return field;
-          })}
-        />
+      <div style={{
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100%', 
+        fontSize: '20px', 
+        color: 'gray', 
+      }}>
+        Error Displaying Data
       </div>
     );
   }
