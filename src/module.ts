@@ -5,7 +5,7 @@ import { GanttPanel } from './GanttPanel';
 import { GanttOptions } from './types';
 
 export const plugin = getPanelPluginOrFallback(
-  'marcusolsson-gantt-panel',
+  'quantumdatis-gantt-panel',
   new PanelPlugin<GanttOptions>(GanttPanel).useFieldConfig().setPanelOptions((builder) => {
     return builder
       .addBooleanSwitch({

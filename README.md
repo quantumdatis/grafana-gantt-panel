@@ -1,5 +1,8 @@
 # Gantt for Grafana
 
+# Quantumdatis' Fork for internal purposes
+Based on marcusolsson/grafana-gantt-panel
+
 [![Build](https://github.com/marcusolsson/grafana-gantt-panel/workflows/CI/badge.svg)](https://github.com/marcusolsson/grafana-gantt-panel/actions?query=workflow%3A%22CI%22)
 [![Release](https://github.com/marcusolsson/grafana-gantt-panel/workflows/Release/badge.svg)](https://github.com/marcusolsson/grafana-gantt-panel/actions?query=workflow%3ARelease)
 [![Marketplace](https://img.shields.io/badge/dynamic/json?logo=grafana&color=F47A20&label=marketplace&prefix=v&query=%24.items%5B%3F%28%40.slug%20%3D%3D%20%22marcusolsson-gantt-panel%22%29%5D.version&url=https%3A%2F%2Fgrafana.com%2Fapi%2Fplugins)](https://grafana.com/grafana/plugins/marcusolsson-gantt-panel)
@@ -7,8 +10,6 @@
 [![License](https://img.shields.io/github/license/marcusolsson/grafana-gantt-panel)](LICENSE)
 [![Twitter](https://img.shields.io/twitter/follow/marcusolsson?color=%231DA1F2&label=twitter&style=plastic)](https://twitter.com/marcusolsson)
 ![Maintenance](https://img.shields.io/maintenance/no/2022?style=plastic)
-
-> **Maintenance**: As I'm no longer working at Grafana Labs, nor am I using Grafana where I'm at now, **I'm no longer able to actively maintain this plugin**. I'm exploring ways to keep the project going. Check back here to stay updated!
 
 A panel plugin for [Grafana](https://grafana.com) to visualize Gantt charts.
 

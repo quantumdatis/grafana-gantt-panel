@@ -1,6 +1,6 @@
 {
-  "name": "marcusolsson-gantt-panel",
-  "version": "0.9.0",
+  "name": "quantumdatis-gantt-panel",
+  "version": "0.9.1",
   "description": "Quantumdatis's custom Gantt visualization for Grafana",
   "keywords": [
     "grafana",
@@ -16,8 +16,8 @@
     "sign": "grafana-toolkit plugin:sign"
   },
   "homepage": "https://grafana.com/plugins/marcusolsson-gantt-panel",
-  "bugs": "https://github.com/marcusolsson/grafana-gantt-panel/issues",
-  "repository": "github:marcusolsson/grafana-gantt-panel",
+  "bugs": "https://github.com/quantumdatis/grafana-gantt-panel/issues",
+  "repository": "github:quantumdatis/grafana-gantt-panel",
   "author": {
     "name": "Marcus Olsson",
     "email": "marcus.olsson@hey.com",
