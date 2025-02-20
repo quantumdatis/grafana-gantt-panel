@@ -1,6 +1,6 @@
 {
   "name": "quantumdatis-gantt-panel",
-  "version": "0.9.2",
+  "version": "0.9.3",
   "description": "Quantumdatis's custom Gantt visualization for Grafana",
   "keywords": [
     "grafana",

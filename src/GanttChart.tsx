@@ -92,7 +92,7 @@ export const GanttChart = ({
         const clientPoint = svgRef.current.createSVGPoint();
 
         clientPoint.x = pt.x;
-        clientPoint.y = pt.x;
+        clientPoint.y = pt.y;
 
         return clientPoint.matrixTransform(matrix.inverse());
       }
@@ -111,11 +111,7 @@ export const GanttChart = ({
       }, {})
     : {};
 
-  const selectableGroups = Object.keys(groups).map((group) => ({
-    label: group,
-    value: group,
-  }));
-
+  const selectableGroups = Object.keys(groups).map((g) => ({ label: g, value: g }));
   const currentGroup = group ?? (selectableGroups.length > 0 ? selectableGroups[0].value : undefined);
 
   const absoluteMode = experiments && experiments.enabled ? !experiments.lockToExtents : currentGroup === undefined;
@@ -146,7 +142,6 @@ export const GanttChart = ({
 
   const sortedIndexes = visibleIndexes.sort((a, b) => {
     const [i, j] = sortOrder === 'asc' ? [a, b] : [b, a];
-
     switch (sortBy) {
       case 'text':
         return textField.values.get(i).localeCompare(textField.values.get(j));
@@ -157,11 +152,18 @@ export const GanttChart = ({
     }
   });
 
-  const taskLabels = [...new Set(sortedIndexes.map((_) => textField.values.get(_)))];
-  const widestLabel = d3.max(taskLabels.map((_) => measureText(_, theme.typography.size.sm)?.width ?? 0)) ?? 0;
-
+  const taskLabels = [...new Set(sortedIndexes.map((i) => textField.values.get(i)))];
+  const widestLabel = d3.max(
+    taskLabels.map((lbl) =>
+      measureText(
+        lbl,
+        `${parseInt(theme.typography.size.sm || '12', 10)}px ${theme.typography.fontFamily.sansSerif}`
+      )?.width ?? 0
+    )
+  ) ?? 0;
+  
   const padding = {
-    left: 10 + (showYAxis ? widestLabel : 0),
+    left: 10 + (showYAxis ? widestLabel + 10 : 0),
     top: 0,
     bottom: 30 + (selectableGroups.length > 0 ? 40 : 0),
     right: 10,
@@ -169,21 +171,21 @@ export const GanttChart = ({
 
   const chartWidth = width - padding.left - padding.right;
   const fixedBarHeight = 30; //QUANTUMDATIS CUSTOM: fixed height for bars
-  const chartHeight = (taskLabels.length + 1) * fixedBarHeight + padding.top + padding.bottom;
+  const chartHeight = (taskLabels.length) * fixedBarHeight + padding.top;
 
   // Find the time range based on the earliest start time and the latest end time.
   const timeExtents: [dayjs.Dayjs, dayjs.Dayjs] = [
     sortedIndexes
-      .map((_) => startField.values.get(_))
+      .map((i) => startField.values.get(i))
       .reduce((acc: dayjs.Dayjs, curr: number) => {
-        const currDateTime = dayjs(curr);
-        return currDateTime.isBefore(acc) ? currDateTime : acc;
+        const dt = dayjs(curr);
+        return dt.isBefore(acc) ? dt : acc;
       }, dayjs()),
     sortedIndexes
-      .map((_) => endField.values.get(_))
+      .map((i) => endField.values.get(i))
       .reduce((acc: dayjs.Dayjs, curr: number) => {
-        const currDateTime = dayjs(curr);
-        return acc.isBefore(currDateTime) ? currDateTime : acc;
+        const dt = dayjs(curr);
+        return acc.isBefore(dt) ? dt : acc;
       }, dayjs(0)),
   ];
 
@@ -195,28 +197,18 @@ export const GanttChart = ({
       }
       return [from.toDate(), to.toDate()];
     }
-
     return [
       groupByField ? timeExtents[0].toDate() : from.toDate(),
       groupByField ? timeExtents[1].toDate() : to.toDate(),
     ];
   };
 
-  let scaleX: any = d3.scaleTime().domain(getExtents()).range([0, chartWidth]);
-
   // Scale for converting from pixel to time. Used for the zoom window.
+  const scaleX = d3.scaleTime().domain(getExtents()).range([0, chartWidth]);
+
   const invertedScaleX = d3.scaleLinear().domain([0, chartWidth]).range([from.valueOf(), to.valueOf()]);
 
-  // Limit bar height to 25% of chartHeight.
-  //const barHeightLimit = 0.25;
-  //const scalePadding = Math.max((1 - barHeightLimit * taskLabels.length) / (1 + barHeightLimit), 0);
-
-
-  const scaleY = d3
-    .scaleBand()
-    .domain(taskLabels)
-    .range([0, taskLabels.length * fixedBarHeight]) 
-    .padding(0.1);
+  const scaleY = d3.scaleBand().domain(taskLabels).range([0, taskLabels.length * fixedBarHeight]).padding(0.1);
 
   const axisX = d3.axisBottom(scaleX).tickFormat((d) => {
     if (experiments && experiments.enabled && experiments.relativeXAxis) {
@@ -241,165 +233,162 @@ export const GanttChart = ({
     height: height - padding.bottom,
   };
 
-  //const barPadding = 2;
   const taskBarHeight = 25;
 
-  /*
-  if (taskBarHeight < 5) {
-    return (
-      <div className="panel-empty">
-        <p>
-          Too many tasks to visualize properly. <br />
-          Update the query to return fewer tasks or increase the height of the panel.
-        </p>
-      </div>
-    );
-  }
-  */
-
   return (
-    <div>
-      <svg
-        ref={svgRef}
-        className={styles.svg}
-        width={width}
-        height={chartHeight}
-        xmlns="http://www.w3.org/2000/svg"
-        xmlnsXlink="http://www.w3.org/1999/xlink"
-        onMouseDown={(e) => {
-          setMouseDown(true);
-
-          const coord = coordClientToViewbox({ x: e.clientX, y: e.clientY });
-
-          if (coord) {
-            setOrigin(coord);
-          }
-        }}
-        onMouseMove={(e) => {
-          const coord = coordClientToViewbox({ x: e.clientX, y: e.clientY });
-
-          if (coord) {
-            setCoordinates(coord);
-
-            if (isMouseDown && absoluteMode) {
-              const distance = Math.sqrt(Math.pow(origin.x - coord.x, 2) + Math.pow(origin.y - coord.y, 2));
-              if (distance > 5) {
-                setDragging(true);
-              }
-            }
-          }
-        }}
-        onMouseUp={() => {
-          setMouseDown(false);
-
-          if (dragging && absoluteMode) {
-            // We use onChangeTimeRange updates the time interval for the
-            // dashboard.
-            onChangeTimeRange({
-              from: invertedScaleX(zoomWindow.x - padding.left),
-              to: invertedScaleX(zoomWindow.x + zoomWindow.width - padding.left),
-            });
-
-            setDragging(false);
-          }
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      <div
+        style={{
+          flex: 1,
+          overflowY: 'auto', 
+          overflowX: 'hidden', 
         }}
       >
-        {/* Task bars */}
-        <g>
-          {sortedIndexes.map((i) => {
-            const label = textField.values.get(i);
-            const startTimeValue = startField.values.get(i);
-            const endTimeValue = endField.values.get(i);
-
-            const startTime = dayjs(startTimeValue);
-            const endTime = dayjs(endTimeValue);
-
-            const pixelStartX = startTimeValue ? Math.max(scaleX(startTime.toDate()), 0) : 0;
-            const pixelEndX = endTimeValue ? Math.min(scaleX(endTime.toDate()), chartWidth) : chartWidth;
-
-            const taskBarWidth = Math.max(pixelEndX - pixelStartX - 2, 1);
-
-            const taskBarPos = {
-              x: pixelStartX + padding.left,
-              y: (scaleY(label) ?? 0) + (scaleY.bandwidth() - taskBarHeight) / 2, 
-            };                     
-
-            const tooltipContent = (
-              <div>
-                <div className={styles.tooltip.header}>{label}</div>
-                {startTimeValue && (
-                  <div className={styles.tooltip.value}>Started at: {startField.display!(startTimeValue).text}</div>
-                )}
-                {endTimeValue && (
-                  <div className={styles.tooltip.value}>Ended at: {endField.display!(endTimeValue).text}</div>
-                )}
-                <div className={styles.tooltip.faint}>
-                  {humanizeDuration((endTimeValue || Date.now()) - startTimeValue, { largest: 2 })}
-                </div>
-                <div>
-                  {labelFields
-                    .filter((field) => field?.values.get(i) !== undefined && field?.values.get(i) !== null)
-                    .map((field) => field?.display!(field?.values.get(i)))
-                    .map(getFormattedDisplayValue)
-                    .map((label, key) => (
-                      <Badge key={key} className={styles.tooltip.badge} text={label ?? ''} color="blue" />
-                    ))}
-                </div>
-              </div>
-            );
-
-            const fillColor = colorByField
-              ? colorByField.type === FieldType.number
-                ? colorByField.display!(colorByField.values.get(i)).color!
-                : labelColor(colorByField.values.get(i), theme, colors)
-              : 'black';
-
-            return (
-              <GanttTask
-                key={i}
-                x={taskBarPos.x}
-                y={taskBarPos.y}
-                width={taskBarWidth}
-                height={taskBarHeight}
-                color={fillColor}
-                tooltip={tooltipContent}
-                links={textField.getLinks!({ valueRowIndex: i })}
-              />
-            );
-          })}
-        </g>
-
-        {/* Zoom window */}
-        {absoluteMode && dragging && (
-          <rect fill={theme.colors.text} opacity={0.1} pointerEvents="none" {...zoomWindow} />
-        )}
-
-        {/* X-axis */}
-        <g
-          transform={`translate(${padding.left}, ${height - (padding.top + padding.bottom)})`}
-          ref={(node) => {
-            d3.select(node).call(axisX as any);
+        <svg
+          ref={svgRef}
+          className={styles.svg}
+          width={width}
+          height={chartHeight}
+          xmlns="http://www.w3.org/2000/svg"
+          xmlnsXlink="http://www.w3.org/1999/xlink"
+          onMouseDown={(e) => {
+            setMouseDown(true);
+            const coord = coordClientToViewbox({ x: e.clientX, y: e.clientY });
+            if (coord) {
+              setOrigin(coord);
+            }
           }}
-          className={css`
-            font-family: ${theme.typography.fontFamily.sansSerif};
-            font-size: ${theme.typography.size.sm};
-          `}
-        />
+          onMouseMove={(e) => {
+            const coord = coordClientToViewbox({ x: e.clientX, y: e.clientY });
+            if (coord) {
+              setCoordinates(coord);
+              if (isMouseDown && absoluteMode) {
+                const distance = Math.sqrt((origin.x - coord.x) ** 2 + (origin.y - coord.y) ** 2);
+                if (distance > 5) {
+                  setDragging(true);
+                }
+              }
+            }
+          }}
+          onMouseUp={() => {
+            setMouseDown(false);
+            if (dragging && absoluteMode) {
+              onChangeTimeRange({
+                from: invertedScaleX(zoomWindow.x - padding.left),
+                to: invertedScaleX(zoomWindow.x + zoomWindow.width - padding.left),
+              });
+              setDragging(false);
+            }
+          }}
+        >
+          <g>
+            {sortedIndexes.map((i) => {
+              const label = textField.values.get(i);
+              const startTimeValue = startField.values.get(i);
+              const endTimeValue = endField.values.get(i);
 
-        {/* Y-axis */}
-        {showYAxis && (
+              const startTime = dayjs(startTimeValue);
+              const endTime = dayjs(endTimeValue);
+
+              const pixelStartX = startTimeValue ? Math.max(scaleX(startTime.toDate()), 0) : 0;
+              const pixelEndX = endTimeValue ? Math.min(scaleX(endTime.toDate()), chartWidth) : chartWidth;
+              const taskBarWidth = Math.max(pixelEndX - pixelStartX - 2, 1);
+
+              const taskBarPos = {
+                x: pixelStartX + padding.left,
+                y: (scaleY(label) ?? 0) + (scaleY.bandwidth() - taskBarHeight) / 2,
+              };
+
+              const tooltipContent = (
+                <div>
+                  <div className={styles.tooltip.header}>{label}</div>
+                  {startTimeValue && (
+                    <div className={styles.tooltip.value}>
+                      Started at: {startField.display!(startTimeValue).text}
+                    </div>
+                  )}
+                  {endTimeValue && (
+                    <div className={styles.tooltip.value}>
+                      Ended at: {endField.display!(endTimeValue).text}
+                    </div>
+                  )}
+                  <div className={styles.tooltip.faint}>
+                    {humanizeDuration((endTimeValue || Date.now()) - startTimeValue, { largest: 2 })}
+                  </div>
+                  <div>
+                    {labelFields
+                      .filter((field) => field?.values.get(i) !== undefined && field?.values.get(i) !== null)
+                      .map((field) => field?.display!(field?.values.get(i)))
+                      .map(getFormattedDisplayValue)
+                      .map((lbl, key) => (
+                        <Badge key={key} className={styles.tooltip.badge} text={lbl ?? ''} color="blue" />
+                      ))}
+                  </div>
+                </div>
+              );
+
+              const fillColor = colorByField
+                ? colorByField.type === FieldType.number
+                  ? colorByField.display!(colorByField.values.get(i)).color!
+                  : labelColor(colorByField.values.get(i), theme, colors)
+                : 'black';
+
+              return (
+                <GanttTask
+                  key={i}
+                  x={taskBarPos.x}
+                  y={taskBarPos.y}
+                  width={taskBarWidth}
+                  height={taskBarHeight}
+                  color={fillColor}
+                  tooltip={tooltipContent}
+                  links={textField.getLinks!({ valueRowIndex: i })}
+                />
+              );
+            })}
+          </g>
+
+          {absoluteMode && dragging && (
+            <rect fill={theme.colors.text} opacity={0.1} pointerEvents="none" {...zoomWindow} />
+          )}
+
+          {showYAxis && (
+            <g
+              transform={`translate(${padding.left}, 0)`}
+              ref={(node) => {
+                d3.select(node).call(axisY as any);
+              }}
+              className={`css
+                font-family: ${theme.typography.fontFamily.sansSerif};
+                font-size: ${theme.typography.size.sm};
+              `}
+            />
+          )}
+        </svg>
+      </div>
+
+      <div style={{ height: 50 }}>
+        <svg width={width} height={20}>
           <g
             transform={`translate(${padding.left}, 0)`}
             ref={(node) => {
-              d3.select(node).call(axisY as any);
+              d3.select(node).call(axisX as any);
             }}
             className={css`
               font-family: ${theme.typography.fontFamily.sansSerif};
               font-size: ${theme.typography.size.sm};
             `}
           />
-        )}
-      </svg>
+        </svg>
+      </div>
+
       {selectableGroups.length > 0 ? (
         <div className={styles.frameSelect}>
           <Select onChange={onGroupChange} value={currentGroup} options={selectableGroups} />
