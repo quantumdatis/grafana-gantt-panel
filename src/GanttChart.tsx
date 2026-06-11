@@ -6,9 +6,10 @@ import {
   FieldType,
   GrafanaTheme2,
   SelectableValue,
+  systemDateFormats,
   TimeRange,
 } from '@grafana/data';
-import { Badge, graphTimeFormat, Select, useStyles2, useTheme2 } from '@grafana/ui';
+import { Badge, Select, useStyles2, useTheme2 } from '@grafana/ui';
 import * as d3 from 'd3';
 import dayjs from 'dayjs';
 import { getFormattedDisplayValue, measureText } from 'grafana-plugin-support';
@@ -20,6 +21,51 @@ import { labelColor } from './helpers';
 type Point = {
   x: number;
   y: number;
+};
+
+const timeUnitSize = {
+  second: 1000,
+  minute: 60 * 1000,
+  hour: 60 * 60 * 1000,
+  day: 24 * 60 * 60 * 1000,
+  year: 365 * 24 * 60 * 60 * 1000,
+};
+
+const getAxisTimeFormat = (tickCount: number, fromMs: number, toMs: number): string => {
+  const span = Math.max(toMs - fromMs, 1);
+  const avgTickMs = span / Math.max(tickCount, 1);
+  const yearRoundedToDay = Math.round(timeUnitSize.year / timeUnitSize.day) * timeUnitSize.day;
+  const incrementRoundedToDay = Math.round(avgTickMs / timeUnitSize.day) * timeUnitSize.day;
+
+  if (avgTickMs < timeUnitSize.second) {
+    return systemDateFormats.interval.millisecond;
+  }
+
+  if (avgTickMs <= timeUnitSize.minute) {
+    return systemDateFormats.interval.second;
+  }
+
+  if (span <= timeUnitSize.day) {
+    return systemDateFormats.interval.minute;
+  }
+
+  if (avgTickMs <= timeUnitSize.day) {
+    return systemDateFormats.interval.hour;
+  }
+
+  if (span < timeUnitSize.year) {
+    return systemDateFormats.interval.day;
+  }
+
+  if (incrementRoundedToDay === yearRoundedToDay) {
+    return systemDateFormats.interval.year;
+  }
+
+  if (avgTickMs <= timeUnitSize.year) {
+    return systemDateFormats.interval.month;
+  }
+
+  return systemDateFormats.interval.year;
 };
 
 interface Props {
@@ -220,7 +266,7 @@ export const GanttChart = ({
     }
 
     const range = scaleX.domain();
-    const format = graphTimeFormat(scaleX.ticks().length, range[0].valueOf(), range[1].valueOf());
+    const format = getAxisTimeFormat(scaleX.ticks().length, range[0].valueOf(), range[1].valueOf());
     return dateTimeFormat(d as number, { format, timeZone });
   });
 
