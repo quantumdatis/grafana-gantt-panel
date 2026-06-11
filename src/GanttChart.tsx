@@ -38,10 +38,6 @@ const getAxisTimeFormat = (tickCount: number, fromMs: number, toMs: number): str
   const yearRoundedToDay = Math.round(timeUnitSize.year / timeUnitSize.day) * timeUnitSize.day;
   const incrementRoundedToDay = Math.round(avgTickMs / timeUnitSize.day) * timeUnitSize.day;
 
-  if (avgTickMs < timeUnitSize.second) {
-    return systemDateFormats.interval.millisecond;
-  }
-
   if (avgTickMs <= timeUnitSize.minute) {
     return systemDateFormats.interval.second;
   }
