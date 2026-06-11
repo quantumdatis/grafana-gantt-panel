@@ -31,6 +31,7 @@ const timeUnitSize = {
   year: 365 * 24 * 60 * 60 * 1000,
 };
 
+// old graphTimeFormat function crashes in grafana 12+
 const getAxisTimeFormat = (tickCount: number, fromMs: number, toMs: number): string => {
   const span = Math.max(toMs - fromMs, 1);
   const avgTickMs = span / Math.max(tickCount, 1);
